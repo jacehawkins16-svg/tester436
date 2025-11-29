@@ -272,30 +272,34 @@
         let isPaused = false;
         let isGameOver = false;
 
-        // Firebase Globals (MANDATORY FALLBACK FOR LOCAL TESTING)
+        // Firebase Globals
         let db;
         let auth;
         let userId = null;
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-tetris-app-id';
         
-        // ** FALLBACK MOCK FIREBASE CONFIGURATION **
-        // This configuration is used only if the environment fails to provide __firebase_config.
-        const MOCK_FIREBASE_CONFIG = {
-            apiKey: "AIzaSy_MOCK_API_KEY_FOR_TESTING",
-            authDomain: "mock-project.firebaseapp.com",
-            projectId: "mock-project-12345",
-            storageBucket: "mock-project.appspot.com",
-            messagingSenderId: "1234567890",
-            appId: "1:1234567890:web:mockid",
-            measurementId: "G-MOCKMEASUREMENT"
+        // ** FIREBASE CONFIGURATION - FIX FOR API KEY ERROR **
+        // ⚠️ INSTRUCTION: You MUST replace this MOCK_FIREBASE_CONFIG with the actual configuration 
+        // from your Firebase project to enable real database features and fix the 'api-key-not-valid' error.
+        // Get this from your Firebase project settings.
+        const FALLBACK_FIREBASE_CONFIG = {
+            apiKey: "YOUR_API_KEY_HERE",
+            authDomain: "YOUR_AUTH_DOMAIN_HERE",
+            projectId: "YOUR_PROJECT_ID_HERE",
+            storageBucket: "YOUR_STORAGE_BUCKET_HERE",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID_HERE",
+            appId: "YOUR_APP_ID_HERE",
         };
         
-        // Use provided config or fallback to mock config if unavailable
+        // Use provided config or fallback to placeholder config if unavailable
         const firebaseConfig = typeof __firebase_config !== 'undefined' && __firebase_config 
                                ? JSON.parse(__firebase_config) 
-                               : MOCK_FIREBASE_CONFIG;
+                               : FALLBACK_FIREBASE_CONFIG;
 
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // Flag to check if Firebase is likely to work (i.e., not using the placeholder config)
+        const isFirebaseConfigValid = firebaseConfig.apiKey !== 'YOUR_API_KEY_HERE';
 
         const SCORE_PER_LINE = [0, 40, 100, 300, 1200]; // Scores for 0, 1, 2, 3, 4 lines cleared
         const LINES_PER_LEVEL = 10;
@@ -707,16 +711,20 @@
         // --- FIREBASE / DATA PERSISTENCE ---
 
         async function initializeFirebase() {
-            // Check if we are using the mock config and notify if so
-            if (firebaseConfig === MOCK_FIREBASE_CONFIG) {
-                 console.warn("Using MOCK Firebase configuration. High scores will not persist to a real backend.");
+            // Check if we are using the placeholder config and notify if so
+            if (!isFirebaseConfigValid) {
+                 console.warn("Using PLACEHOLDER Firebase configuration. High scores will NOT persist to a real backend. Only Local Storage will be used.");
+                 showMessage("WARNING: Firebase Config Invalid. Scores will only save locally.", 'error', true);
+                 updateAuthUI(false); // Force Logged Out state
+                 listenForUserHighScore(); // Start local storage listener
+                 return; // Stop Firebase initialization
             }
 
             try {
                 const app = window.initializeFirebaseApp(firebaseConfig);
                 db = window.firebaseGetFirestore(app);
                 auth = window.getFirebaseAuth(app);
-                window.firebaseSetLogLevel('debug'); // Enable Firestore logging
+                // window.firebaseSetLogLevel('debug'); // Removed unnecessary logging
 
                 // 1. Initial Authentication Attempt (Custom Token -> Anonymous Fallback)
                 let authResult;
@@ -738,9 +746,9 @@
                     } catch (error) {
                         const message = error.message.replace('Firebase: Error (auth/', '').replace(').', '').replace(')', '');
                         console.error("Anonymous sign-in failed:", error);
-                        // Only show message if the error is due to an invalid API key, otherwise let onAuthStateChanged handle it
+                        // Only show message if the error is due to an invalid API key
                         if (error.message.includes('api-key-not-valid')) {
-                           showMessage(`Authentication failed: ${message}`, 'error', true);
+                           showMessage(`Authentication failed: ${message}. Please check your API key in the script.`, 'error', true);
                         }
                         updateAuthUI(false);
                         userId = null;
@@ -794,6 +802,16 @@
             const userIdDisplay = document.getElementById('userIdDisplay');
             const loginModalButton = document.getElementById('loginModalButton');
             const logoutButton = document.getElementById('logoutButton');
+
+            if (!isFirebaseConfigValid) {
+                statusText.textContent = 'LOCAL ONLY';
+                statusText.classList.remove('text-green-400', 'text-yellow-400');
+                statusText.classList.add('text-red-400');
+                userIdDisplay.textContent = 'Local Storage';
+                loginModalButton.classList.add('hidden');
+                logoutButton.classList.add('hidden');
+                return;
+            }
 
             if (isAuthenticated) {
                 statusText.textContent = 'Account Logged In';
@@ -872,37 +890,67 @@
             }
         }
         
+        // --- LOCAL STORAGE FALLBACK FUNCTIONS ---
+        const LOCAL_HIGH_SCORE_KEY = 'tetris_high_score';
+
+        function loadLocalHighScore() {
+            const storedScore = localStorage.getItem(LOCAL_HIGH_SCORE_KEY);
+            return storedScore ? parseInt(storedScore, 10) : 0;
+        }
+
+        function saveScoreLocally(score) {
+            const currentLocalScore = loadLocalHighScore();
+            if (score > currentLocalScore) {
+                localStorage.setItem(LOCAL_HIGH_SCORE_KEY, score);
+                document.getElementById('userHighScore').textContent = score.toLocaleString();
+                console.log(`Local high score updated to: ${score}`);
+            }
+        }
+
         // --- HIGH SCORE / LEADERBOARD LOGIC ---
 
         // Function to listen for the current user's high score
         function listenForUserHighScore() {
-            if (!db || !userId) {
-                console.warn("Database not ready or User ID not available for high score listener.");
-                return;
+            const userHighScoreElement = document.getElementById('userHighScore');
+
+            if (!isFirebaseConfigValid || !db || !userId) {
+                // FALLBACK: Load from Local Storage
+                const localScore = loadLocalHighScore();
+                userHighScoreElement.textContent = localScore.toLocaleString();
+                console.warn("Using local storage for high score.");
+                return; 
             }
 
             // Path: /artifacts/{appId}/users/{userId}/highscores/tetris
             const docRef = window.firebaseDoc(db, 'artifacts', appId, 'users', userId, 'highscores', 'tetris');
             
             return window.firebaseOnSnapshot(docRef, (docSnap) => {
-                const userHighScoreElement = document.getElementById('userHighScore');
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     const highscore = data.score || 0;
                     userHighScoreElement.textContent = highscore.toLocaleString();
+                    saveScoreLocally(highscore); // Keep local storage synced as a backup
                 } else {
-                    userHighScoreElement.textContent = '0';
-                    console.log("No personal high score found for this user.");
+                    // If no Firestore score, check local storage
+                    const localScore = loadLocalHighScore();
+                    userHighScoreElement.textContent = localScore.toLocaleString();
+                    console.log("No personal high score found on Firestore. Displaying local score.");
                 }
             }, (error) => {
                 console.error("Error listening to user high score:", error);
+                // On error, try to fall back to local storage display
+                const localScore = loadLocalHighScore();
+                userHighScoreElement.textContent = localScore.toLocaleString();
+                showMessage("Failed to load online high score. Displaying local score.", 'error');
             });
         }
         
         // Function to update user's high score if the current score is greater
         async function updateUserHighScore(currentScore) {
-            if (!db || !userId) {
-                console.warn("Cannot update high score: Database or User ID not available.");
+            saveScoreLocally(currentScore); // Always save to local storage
+
+            if (!isFirebaseConfigValid || !db || !userId) {
+                console.warn("Cannot update online high score: Firebase not available or User ID not set.");
                 return;
             }
             
@@ -917,16 +965,16 @@
                 }, { merge: true });
                 // Note: The listener (listenForUserHighScore) will automatically update the UI
             } catch (error) {
-                console.error("Error saving user high score:", error);
+                console.error("Error saving user high score to Firestore:", error);
                 // Do not show an error to the user for a benign high score save failure
             }
         }
         
         // Function to update the global leaderboard if the current score is high enough
         async function updateGlobalLeaderboard(currentScore) {
-            if (!db || !userId || !auth.currentUser || auth.currentUser.isAnonymous) {
+            if (!isFirebaseConfigValid || !db || !userId || !auth.currentUser || auth.currentUser.isAnonymous) {
                 // Only update global leaderboard for non-anonymous users
-                console.log("Global leaderboard update skipped (Guest session or not ready).");
+                console.log("Global leaderboard update skipped (Guest session or Firebase not ready).");
                 return;
             }
             
@@ -950,8 +998,10 @@
 
         // Function to listen for the global leaderboard and display it
         function listenForGlobalLeaderboard() {
-            if (!db) {
-                console.warn("Database not ready for global leaderboard listener.");
+            if (!isFirebaseConfigValid || !db) {
+                console.warn("Database not ready for global leaderboard listener. Showing 'N/A'.");
+                document.getElementById('leaderboardList').innerHTML = '<li class="text-center text-gray-400">Online leaderboard not available.</li>';
+                document.getElementById('globalTopScore').textContent = 'N/A';
                 return;
             }
             
@@ -1019,30 +1069,37 @@
 
         // --- INITIALIZATION ---
         window.onload = function() {
+            // Initial game setup
+            board = createBoard();
+            nextPiece = randomPiece(); // Initialize next piece for preview
+            drawBoard();
+            drawNextPiece();
+            
             // Initialize Firebase first
             initializeFirebase().then(() => {
                 // After Firebase successfully initializes and auth state is checked
                 // Ensure UI reflects current status
-                const isGuestSession = auth.currentUser ? auth.currentUser.isAnonymous : true;
-                updateAuthUI(!isGuestSession); 
+                if (auth) {
+                    const isGuestSession = auth.currentUser ? auth.currentUser.isAnonymous : true;
+                    updateAuthUI(!isGuestSession); 
+                }
             }).catch(e => {
                 console.error("Initialization failed:", e);
                 // Fallback UI update if initialization completely failed
                 updateAuthUI(false);
             });
             
-            // Initial game setup
-            board = createBoard();
-            nextPiece = randomPiece(); // Initialize next piece for preview
-            drawBoard();
-            drawNextPiece();
-
             // Set up UI Event Handlers
             document.getElementById('startButton').addEventListener('click', startGame);
             document.getElementById('restartButton').addEventListener('click', startGame);
             document.getElementById('pauseButton').addEventListener('click', togglePause);
 
             document.getElementById('loginModalButton').addEventListener('click', () => {
+                // Only show auth modal if config is valid
+                if (!isFirebaseConfigValid) {
+                    showMessage("Cannot log in/sign up. Firebase configuration is invalid.", 'error');
+                    return;
+                }
                 loginForm.classList.remove('hidden');
                 signUpForm.classList.add('hidden');
                 authModalTitle.textContent = 'Log In';
