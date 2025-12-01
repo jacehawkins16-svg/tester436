@@ -10,6 +10,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
+            /* Deep, dark, responsive background */
             background: linear-gradient(135deg, #0f172a 0%, #020412 100%);
             min-height: 100vh; 
             color: #e2e8f0;
@@ -19,90 +20,94 @@
             border: 1px solid #334155;
             box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
         }
+        /* Style for the table header */
         .data-table th {
             background-color: #334155;
             color: #cbd5e1;
             padding: 12px 16px;
             text-align: left;
-            border-bottom: 2px solid #475569;
+            font-weight: 600;
         }
+        /* Style for table data cells */
         .data-table td {
             padding: 12px 16px;
-            border-bottom: 1px solid #334155;
+            border-top: 1px solid #334155;
+            color: #d1d5db;
+            font-size: 0.875rem; /* sm */
         }
-        .data-table tr:hover {
-            background-color: #2d3748;
+        /* Hover effect for table rows */
+        .data-table tbody tr:hover {
+            background-color: #273449;
         }
-        /* Custom Scrollbar for the table container */
-        .log-container::-webkit-scrollbar {
-            width: 8px;
-        }
-        .log-container::-webkit-scrollbar-thumb {
-            background-color: #475569;
-            border-radius: 4px;
-        }
+        
+        /* Custom scrollbar for aesthetic consistency */
+        ::-webkit-scrollbar { width: 8px; background-color: transparent; }
+        ::-webkit-scrollbar-thumb { background-color: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-track { background-color: #1e293b; }
+        ::-webkit-scrollbar-thumb:hover { background-color: #64748b; }
+
     </style>
 </head>
-<body class="p-8">
+<body class="p-4 sm:p-8">
+    <div class="max-w-7xl mx-auto container-card rounded-2xl p-6 sm:p-10 mt-8">
+        <h1 class="text-4xl font-extrabold mb-2 text-white">Network Report Dashboard</h1>
+        <p class="text-indigo-400 mb-8">Real-time log of network client reports.</p>
 
-    <div class="max-w-7xl mx-auto container-card rounded-2xl p-6 md:p-10">
-        <h1 class="text-4xl font-extrabold mb-2 tracking-tight text-indigo-400">
-            Access Verification Log
-        </h1>
-        <p class="text-gray-400 mb-6">Real-time feed of network and device reports sent from the client application.</p>
-        
-        <!-- Loading and Error States -->
-        <div id="loading-state" class="text-center p-8 text-indigo-300">
-            <svg class="animate-spin h-5 w-5 mr-3 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <!-- Loading State -->
+        <div id="loading-state" class="bg-indigo-900/30 border border-indigo-700/50 p-6 rounded-lg text-center text-indigo-300 font-semibold">
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-300 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            Establishing secure connection and fetching logs...
+            Connecting to Database and Fetching Reports...
         </div>
 
-        <div id="error-state" class="hidden bg-red-800 p-4 rounded-lg text-red-200">
-            <p class="font-bold">Database Error:</p>
-            <p id="error-message"></p>
+        <!-- Error State: Hidden unless Firebase setup or listener fails -->
+        <div id="error-state" class="bg-red-900/30 border border-red-700/50 p-6 rounded-lg text-center hidden mb-8">
+            <h2 class="text-xl font-bold text-red-300 mb-2">Database Error:</h2>
+            <p id="error-message" class="text-red-400">Loading failed due to an unknown error.</p>
         </div>
 
-        <!-- Log Table Container -->
-        <div id="log-container" class="log-container overflow-x-auto max-h-[70vh] rounded-xl">
-            <table class="data-table w-full text-sm">
+        <!-- Table Container -->
+        <div class="overflow-x-auto shadow-xl rounded-lg">
+            <table class="min-w-full divide-y divide-gray-700 data-table">
                 <thead>
                     <tr>
-                        <!-- Added more detailed headers -->
-                        <th class="sticky top-0 z-10">User Name</th>
-                        <th class="sticky top-0 z-10">Public IP</th>
-                        <th class="sticky top-0 z-10">Location (City, Region)</th>
-                        <th class="sticky top-0 z-10">ISP/Org (ASN)</th>
-                        <th class="sticky top-0 z-10">Browser/OS</th>
-                        <th class="sticky top-0 z-10">Resolution</th>
-                        <th class="sticky top-0 z-10">Connection</th>
-                        <th class="sticky top-0 z-10">Battery/Charge</th>
-                        <th class="sticky top-0 z-10">Log Time (Local)</th>
+                        <th scope="col" class="min-w-[120px] sticky left-0 z-10">Client Name</th>
+                        <th scope="col">IP Address</th>
+                        <th scope="col">Location (City/Region/Country)</th>
+                        <th scope="col">Browser/OS</th>
+                        <th scope="col">ISP/Org</th>
+                        <th scope="col">Battery</th>
+                        <th scope="col">Time Logged</th>
                     </tr>
                 </thead>
-                <tbody id="reports-body">
-                    <!-- Reports will be inserted here by JavaScript -->
+                <tbody id="reports-body" class="divide-y divide-gray-800">
+                    <!-- Placeholder row, replaced by JavaScript upon data load -->
+                    <tr><td colspan="7" class="text-center py-4 text-gray-500">No reports found.</td></tr>
                 </tbody>
             </table>
         </div>
-        
-        <div id="no-reports-state" class="hidden text-center p-8 text-gray-500">
-            No verification reports have been logged yet.
-        </div>
     </div>
-
 
     <script type="module">
         // --- Firebase Imports ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, query, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
-        // --- Firebase Global Variables (Provided by Canvas) ---
+        // --- Global Variables (Provided by Canvas) ---
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        
+        // Safely parse the Firebase configuration string
+        const firebaseConfig = (() => {
+            try {
+                return JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+            } catch (e) {
+                console.error("Failed to parse __firebase_config:", e);
+                return {};
+            }
+        })();
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
         
         // --- DOM Elements ---
@@ -110,102 +115,108 @@
         const loadingState = document.getElementById('loading-state');
         const errorState = document.getElementById('error-state');
         const errorMessageEl = document.getElementById('error-message');
-        const noReportsState = document.getElementById('no-reports-state');
 
         // --- Firebase Instances & State ---
-        let db, auth;
-        let authReady = false;
-        
+        let db; // Firestore instance
+        let authReady = false; // Flag to ensure listener only starts after auth is successful
+        let firebaseInitPromise = null; // Promise to ensure initialization only runs once
+
         // --- Constants ---
-        // Path MUST match the path used by the client site
-        const PUBLIC_COLLECTION_PATH = `artifacts/${appId}/public/data/network_reports`; 
+        // Path for public data shared between the two applications
+        const PUBLIC_COLLECTION_PATH = `artifacts/${appId}/public/data/network_reports`;
         
         /**
-         * Initializes Firebase and authenticates the user anonymously.
+         * Initializes Firebase, signs in the user, and sets the authReady flag.
+         * This function is crucial for preventing database access before the environment is ready.
          */
-        async function setupFirebase() {
-            if (!firebaseConfig || !firebaseConfig.apiKey) {
-                console.error("Firebase configuration is missing.");
-                errorMessageEl.textContent = "Firebase configuration is not set up correctly.";
-                errorState.classList.remove('hidden');
-                loadingState.classList.add('hidden');
-                return; 
-            }
-            
-            try {
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-                
-                // Sign in (use custom token if available, otherwise anonymously)
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
+        function setupFirebase() {
+            if (firebaseInitPromise) return firebaseInitPromise; 
+
+            firebaseInitPromise = new Promise(async (resolve) => {
+                // 1. Validation Check: Ensure configuration is present
+                if (!firebaseConfig || !firebaseConfig.apiKey) {
+                    const message = "Database Error: Firebase configuration is not set up correctly.";
+                    console.error(message);
+                    loadingState.classList.add('hidden');
+                    errorMessageEl.textContent = message;
+                    errorState.classList.remove('hidden');
+                    // authReady remains false, preventing listenForReports from running
+                    return resolve(); 
                 }
                 
-                authReady = true;
-                console.log("Firebase Authentication complete. Ready to fetch logs.");
-                
-            } catch (error) {
-                console.error("Firebase Authentication failed:", error);
-                errorMessageEl.textContent = `Authentication failed: ${error.message}. Check browser console for details.`;
-                errorState.classList.remove('hidden');
-                loadingState.classList.add('hidden');
-            }
+                try {
+                    // 2. Initialize App and Services
+                    const app = initializeApp(firebaseConfig);
+                    db = getFirestore(app);
+                    const auth = getAuth(app);
+                    
+                    // 3. Authenticate (using custom token if available, otherwise anonymously)
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                    
+                    // 4. Success: Set the ready flag
+                    authReady = true;
+                    console.log("Firebase Authentication complete. Listener ready.");
+                    resolve();
+                    
+                } catch (error) {
+                    // 5. Failure: Display error
+                    const message = `Database Error: Initialization/Authentication failed. ${error.message}`;
+                    console.error(message, error);
+                    loadingState.classList.add('hidden');
+                    errorMessageEl.textContent = message;
+                    errorState.classList.remove('hidden');
+                    resolve(); 
+                }
+            });
+
+            return firebaseInitPromise;
         }
-        
+
         /**
-         * Renders the fetched reports into the table.
-         * @param {Array<Object>} reports The list of reports from Firestore.
+         * Renders the fetched reports into the table body.
+         * @param {Array<Object>} reports Array of report objects.
          */
         function renderReports(reports) {
-            reportsBody.innerHTML = ''; // Clear existing rows
+            reportsBody.innerHTML = '';
             
             if (reports.length === 0) {
-                noReportsState.classList.remove('hidden');
-            } else {
-                noReportsState.classList.add('hidden');
-                // Sort by timestamp (newest first)
-                reports.sort((a, b) => new Date(b.logTimestamp) - new Date(a.logTimestamp));
+                reportsBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-gray-500">No reports found yet.</td></tr>';
+                return;
+            }
+
+            // Sort by timestamp (most recent first)
+            reports.sort((a, b) => new Date(b.logTimestamp) - new Date(a.logTimestamp));
+
+            for (const report of reports) {
+                const row = document.createElement('tr');
                 
-                reports.forEach(report => {
-                    const row = document.createElement('tr');
-                    
-                    // Use report.name as the User Name
-                    // Style row based on connection type for visual distinction
-                    const connection = report.connectionSpeed || 'N/A';
-                    const statusClass = connection.includes('4g') || connection.includes('wifi') ? 'text-green-300' : 
-                                        connection.includes('3g') || connection.includes('2g') ? 'text-yellow-300' : 'text-gray-300';
-
-                    // Format battery information
-                    let batteryText = 'N/A';
-                    if (report.batteryLevel !== undefined && report.batteryLevel !== null) {
-                        const level = (report.batteryLevel * 100).toFixed(0);
-                        const chargingStatus = report.isCharging === true ? 'Charging' : (report.isCharging === false ? 'Discharging' : '');
-                        batteryText = `${level}% ${chargingStatus}`;
-                    }
-
-
-                    row.innerHTML = `
-                        <td class="font-bold whitespace-nowrap ${statusClass}">${report.name || 'Unknown'}</td>
-                        <td class="font-mono text-xs">${report.ip || 'N/A'}</td>
-                        <td>${report.city || 'N/A'}, ${report.region || ''} ${report.country || 'N/A'}</td>
-                        <td class="text-xs">
-                            ${report.org || 'N/A'} 
-                            <span class="text-gray-500">(${report.asn || 'N/A'})</span>
-                        </td>
-                        <td class="text-xs">
-                            ${report.browser || 'N/A'} / ${report.os || 'N/A'}
-                            <div class="text-gray-500 text-[10px] truncate">${report.userAgent || ''}</div>
-                        </td>
-                        <td class="text-xs">${report.screenResolution || 'N/A'}</td>
-                        <td class="text-xs">${connection}</td>
-                        <td class="text-xs">${batteryText}</td>
-                        <td>${report.localTimeFormatted || 'N/A'}</td>
-                    `;
-                    reportsBody.appendChild(row);
-                });
+                // Concatenate location data
+                const locationText = `${report.city || 'N/A'}, ${report.region || 'N/A'}, ${report.country || 'N/A'}`;
+                // Concatenate browser and OS
+                const browserOSText = `${report.browser || 'N/A'} / ${report.os || 'N/A'}`;
+                
+                let batteryText = 'N/A';
+                if (report.batteryLevel !== null && report.batteryLevel !== undefined) {
+                    const levelPercent = (report.batteryLevel * 100).toFixed(0);
+                    const chargingStatus = report.isCharging ? 'Charging' : 'Discharging';
+                    batteryText = `${levelPercent}% (${chargingStatus})`;
+                }
+                
+                // Create table row with data
+                row.innerHTML = `
+                    <td class="sticky left-0 bg-[#1e293b] font-medium text-white rounded-l-lg">${report.name || 'Anonymous'}</td>
+                    <td class="font-mono text-xs">${report.ip || 'N/A'}</td>
+                    <td class="text-xs">${locationText}</td>
+                    <td class="text-xs">${browserOSText}</td>
+                    <td class="text-xs min-w-[150px]">${report.org || 'N/A'}</td>
+                    <td class="text-xs">${batteryText}</td>
+                    <td class="rounded-r-lg">${report.localTimeFormatted || 'N/A'}</td>
+                `;
+                reportsBody.appendChild(row);
             }
         }
 
@@ -213,32 +224,46 @@
          * Sets up the real-time listener for the Firestore collection.
          */
         function listenForReports() {
-            if (!db || !authReady) return;
+            // CRITICAL GUARD: Only proceed if Firebase is initialized and authenticated
+            if (!db || !authReady) {
+                 console.error("Attempted to listen for reports before authentication was complete/successful.");
+                 return;
+            }
 
             const q = query(collection(db, PUBLIC_COLLECTION_PATH));
             
-            // onSnapshot sets up a real-time listener
-            onSnapshot(q, (snapshot) => {
+            // onSnapshot sets up a real-time listener that updates the UI whenever data changes
+            const unsubscribe = onSnapshot(q, (snapshot) => {
                 loadingState.classList.add('hidden'); // Hide loading state once initial data is received
+                errorState.classList.add('hidden'); // Ensure error state is hidden on success
                 const reports = [];
                 snapshot.forEach((doc) => {
                     reports.push({ id: doc.id, ...doc.data() });
                 });
                 renderReports(reports);
             }, (error) => {
+                // Handle real-time listener errors
                 console.error("Error listening to collection:", error);
+                loadingState.classList.add('hidden');
                 errorMessageEl.textContent = `Real-time feed failed: ${error.message}`;
                 errorState.classList.remove('hidden');
-                loadingState.classList.add('hidden');
             });
+            
+            // Note: The listener will remain active until the window is closed or this unsubscribe function is called.
+            console.log("Real-time listener started.");
         }
 
         // --- Application Setup ---
         window.onload = async function() {
+            // Step 1: Initialize and Authenticate Firebase
             await setupFirebase(); 
             
+            // Step 2: Only start listening if the authentication succeeded
             if (authReady) {
                 listenForReports();
+            } else {
+                // If auth failed, setupFirebase already updated the UI error message.
+                console.log("Not starting listener because Firebase setup failed.");
             }
         };
     </script>
