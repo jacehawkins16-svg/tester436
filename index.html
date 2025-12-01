@@ -75,7 +75,7 @@
                         <th class="sticky top-0 z-10">Public IP</th>
                         <th class="sticky top-0 z-10">Location (City, Region)</th>
                         <th class="sticky top-0 z-10">ISP/Org (ASN)</th>
-                        <th class="sticky top-0 z-10">Browser/OS/UA</th>
+                        <th class="sticky top-0 z-10">Browser/OS</th>
                         <th class="sticky top-0 z-10">Resolution</th>
                         <th class="sticky top-0 z-10">Connection</th>
                         <th class="sticky top-0 z-10">Battery/Charge</th>
@@ -191,7 +191,10 @@
                         <td class="font-bold whitespace-nowrap ${statusClass}">${report.name || 'Unknown'}</td>
                         <td class="font-mono text-xs">${report.ip || 'N/A'}</td>
                         <td>${report.city || 'N/A'}, ${report.region || ''} ${report.country || 'N/A'}</td>
-                        <td class="text-xs">${report.org || 'N/A'} (${report.asn || 'N/A'})</td>
+                        <td class="text-xs">
+                            ${report.org || 'N/A'} 
+                            <span class="text-gray-500">(${report.asn || 'N/A'})</span>
+                        </td>
                         <td class="text-xs">
                             ${report.browser || 'N/A'} / ${report.os || 'N/A'}
                             <div class="text-gray-500 text-[10px] truncate">${report.userAgent || ''}</div>
